@@ -1,41 +1,49 @@
-# Bulk RNA-seq — Friedreich ataxia (FA) cell models
+# Bulk RNA-seq pipeline — Friedreich ataxia cell models
 
-Salmon → tximport → DESeq2 → fgsea for fibroblasts, iPSC and iNeurons (control / FA / FA_edited), followed by
-pathway classification (A = FA vs control, B = edited vs control, C = FA vs edited), leave-one-line-out robustness and figures.
+An end-to-end, reproducible analysis of bulk RNA-seq from **fibroblasts, iPSC and iNeurons** carrying Friedreich ataxia
+(FA) and their **isogenic edited** counterparts: Salmon → tximport → DESeq2 → fgsea, then pathway classification and a
+**leave-one-line-out robustness analysis**.
 
-**Quick start**: copy `config/config.example.R` to `config/config.R` and fill in your paths and sample sheet; then
-`Rscript run_bulk_pipeline.R`, `./run_downstream.sh pathway`, `./run_downstream.sh gsea_loo`, `./run_downstream.sh figures`.
-Before the first `git push`, run `./check_before_push.sh`. Licence: MIT. Detailed notes below are in French.
+![Robustness of pathways, fibroblasts FA vs control](results_summary/robust_Fibroblasts_A.png)
 
----
+**Results at a glance → [`results_summary/`](results_summary/README.md)**
 
-# Bulk RNA-seq FA — dossier de travail local
+## What this repository does
+1. **Differential expression** with DESeq2: paired design for FA vs edited lines, sex adjustment when appropriate,
+   unshrunk and shrunk log2FC, per-contrast QC (PCA, sex check, differentiation markers).
+2. **Gene-set enrichment** with fgsea on Wald statistics (Hallmark, GO BP/CC/MF), fixed seed.
+3. **Pathway classification** across three contrasts: A = FA vs control, B = edited vs control, C = FA vs edited
+   (rescued / persistent / corrected pathways), plus theme plots and heatmaps (`pathway_pipeline/`).
+4. **Leave-one-line-out GSEA** (`gsea_loo/`): each pathway is re-tested after removing one line at a time; scores include a
+   worst-case NES, per-line contribution and a flag for pathways driven by a single line. With only 3 lines per group this
+   separates reproducible signals from line-specific ones.
+5. **Figures and tables** from one source (`gsea_loo/02_figures_and_table.py`): rankings, robustness, corrected/persistent
+   pathways and cross-model comparison, with the frataxin (FXN) axis highlighted.
 
-Ordre d'exécution (depuis la racine de ce dossier ; copie d'abord `config/config.example.R` en `config/config.R` si tu pars d'un clone git) :
+## Quick start
+```bash
+cp config/config.example.R config/config.R      # fill in Salmon paths and the sample sheet
+Rscript -e 'source("config/packages.R"); install_missing_packages()'
+Rscript run_bulk_pipeline.R                     # DESeq2 + fgsea, writes results_v4/
+./run_downstream.sh pathway                     # pathway classification and plots
+./run_downstream.sh gsea_loo                    # leave-one-line-out GSEA (R)
+./run_downstream.sh figures                     # figures + Excel table (Python: pandas, numpy, matplotlib, openpyxl)
+```
 
-| # | Commande | Rôle | Durée |
-|---|---|---|---|
-| 0 | `Rscript -e 'source("config/packages.R"); install_missing_packages()'` | installe les paquets R | une fois |
-| 1 | `Rscript run_bulk_pipeline.R` | Salmon → tximport → DESeq2 → fgsea → QC, cross-datasets → `results_v4/` | long |
-| 2 | `./run_downstream.sh pathway` | classification A/B/C, rescue map, thèmes, nouveaux pathways (`pathway_pipeline/`) | court |
-| 3 | `./run_downstream.sh analysis` | scripts 40, 42, 51, 52, 54 (rescue, composition, tables, tests au niveau échantillon) | moyen |
-| 4 | `./run_downstream.sh gsea_loo` | GSEA leave-one-line-out, 3 modèles, tous contrastes → `gsea_loo/out/` | long |
-| 5 | `./run_downstream.sh figures` | figures + `Pathways_leave_one_line_out.xlsx` → `plot_enrichment/` | 1 min |
+## Layout
+```
+run_bulk_pipeline.R      main pipeline          config/        parameters (config.example.R is a template)
+R/                       helper functions       pathway_pipeline/   pathway classification and plots
+analysis/                rescue and composition analyses   gsea_loo/    robustness analysis and figures
+run_downstream.sh        runs the steps after the main pipeline
+```
 
-Si tes résultats existent déjà ailleurs : `RES_DIR=/chemin/results_v4 ./run_downstream.sh pathway`.
-Les chemins Salmon de `config/config.R` se changent par variables d'environnement (`FA_SALMON_FIBRO`, `FA_SALMON_iPSC`, `FA_SALMON_iNeurons`) ou directement dans le fichier.
-Le GTF (`data/Homo_sapiens.GRCh38.112.gtf.gz`, 54 Mo) n'est pas inclus : les caches `.rds` de `data/` suffisent tant qu'ils existent ; sinon copie le GTF dans `data/`.
+## Notes
+- Sign convention: log2FC and NES > 0 mean higher in the first group named. The output folder `FA_edited_vs_FA`
+  keeps its historical name; its log2FC is FA − edited.
+- n = 3 lines per group: results are exploratory.
+- Input data (Salmon outputs) and results are not included.
+- Notes in French: [`README_fr.md`](README_fr.md).
 
-## Contenu
-- `run_bulk_pipeline.R` (ex `mainPatchSave.R`), `config/`, `R/` : pipeline principal (voir l'ancien README dans `_archive/` si besoin).
-- `pathway_pipeline/` : analyses de pathways configurées par `00_config.R`.
-- `analysis/` : scripts 40, 42, 51, 52, 54 (issus du dossier scripts ChIP/intégration, mais purement bulk).
-- `gsea_loo/` : GSEA leave-one-line-out + toutes les figures et le tableau pour Cal.
-- `_archive/` : doublons, anciennes versions et fichiers de sortie (rien n'est appelé depuis là).
-
-## Convention de signe
-A = FA vs control ; B = edited vs control ; C = FA vs edited (NES/log2FC > 0 = plus haut dans le premier groupe).
-Attention : le dossier de contraste `FA_edited_vs_FA` porte un nom inversé par rapport au signe (log2FC = FA − édité).
-
-## Non trouvé dans les fichiers reçus
-Le script qui écrit `FXN_DEG_rows.csv`, `FXN_normalized_counts.csv` et `STING_panel_counts_per_sample.csv` (copiés dans `_archive/doublons/`).
+## Author
+A-P. Uhart — released under the MIT licence.

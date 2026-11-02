@@ -23,3 +23,10 @@ __pycache__/
 *.bak
 .~lock*
 .DS_Store
+
+# results_summary est publié (sélection de figures)
+!results_summary/
+!results_summary/**
+
+# archives
+*.zip
