@@ -6,7 +6,7 @@ An end-to-end, reproducible analysis of bulk RNA-seq from **fibroblasts, iPSC an
 
 ![Robustness of pathways, fibroblasts FA vs control](results_summary/robust_Fibroblasts_A.png)
 
-**Results at a glance → [`results_summary/`](results_summary/README.md)**
+**Results at a glance → [`results_summary/`](results_summary/README.md)** · **Every output explained → [`docs/OUTPUTS.md`](docs/OUTPUTS.md)**
 
 ## What this repository does
 1. **Differential expression** with DESeq2: paired design for FA vs edited lines, sex adjustment when appropriate,
