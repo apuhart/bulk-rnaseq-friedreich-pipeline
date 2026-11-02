@@ -4,6 +4,7 @@ What each step writes, how it is computed and how to read it. Paths are relative
 Conventions used everywhere: **A** = FA vs control, **B** = edited vs control, **C** = FA vs edited; log2FC and NES > 0 mean
 *higher in the first group named*. **NES** = normalised enrichment score (fgsea); **padj** = Benjamini–Hochberg FDR.
 Each cell model has 3 lines per group, so all results are exploratory.
+Illustrations below are real outputs, mostly from the **iNeurons** model.
 
 | Step | Command | Writes to |
 |---|---|---|
@@ -36,6 +37,37 @@ At the top level of `results_v4/` (not per model): `CROSS_*`, `iPSC_vs_iNeurons/
 
 **Pitfall.** The folder `FA_edited_vs_FA` has a historical name: its log2FC is **FA − edited** (positive = higher in FA).
 
+### Examples (iNeurons)
+
+**`QC/<model>_PCA_global.pdf`: global PCA.** Top 500 variable genes (VST). Dotted lines join samples from the same line
+(e.g. an FA line and its edited counterpart); shape = sex, colour = condition.
+![global PCA](img/qc_pca_global.png)
+
+**`QC/<model>_sex_check.pdf`: sex check.** Expression of Y-linked genes and XIST per sample, with the declared sex on top;
+a sample whose profile contradicts its label is flagged here.
+![sex check](img/qc_sex_check.png)
+
+**`QC/<model>_differentiation_scores.pdf`: differentiation scores.** Mean log2 normalised counts of marker groups
+(forebrain, glutamate, neurons, pluripotency, progenitors…) per sample, by condition, to spot atypical samples.
+![differentiation scores](img/qc_differentiation_scores.png)
+
+**`<contrast>/*_diag_pvalue_hist.pdf`: p-value histogram.** A peak near 0 on a roughly flat background indicates real signal and a well-calibrated test.
+![p-value histogram](img/diag_pvalue_hist_A.png)
+
+**`<contrast>/*_diag_MA.pdf`: MA plot (unshrunk LFC).** Each dot is a gene: mean expression on x, log2 fold change on y; blue = significant.
+![MA plot](img/diag_MA_A.png)
+
+**`<contrast>/*_PCA_2D.pdf`: PCA of the samples in the contrast.**
+![contrast PCA](img/pca2d_A.png)
+
+**`RESCUE_RATIO/<model>_rescue_ratio_hist.pdf`: rescue ratio of FA-DEGs.** LFC(FA vs edited) / LFC(FA vs control) for each FA-DEG.
+0 = no change after editing, 1 = full return to the control level (clipped to −1 / 2). Read it as a distribution, not a test.
+![rescue ratio](img/rescue_ratio_hist.png)
+
+**`PAIRED_DEG_CLASSIFICATION/<model>_paired_deg_classification.pdf`: FA-specific or clone effect?** x = LFC FA − control, y = LFC edited − control.
+Genes on the axis y = 0 are corrected by editing (`FA-specific`); genes on the axis x = 0 differ in the edited clone but not in FA (`edited clone`).
+![paired DEG classification](img/paired_deg_classification.png)
+
 ---
 
 ## 2. Pathway classification → `results_v4/pathway_ABC/`
@@ -55,6 +87,23 @@ Combines the fgsea results of A, B and C for each model.
 | `module_scores_<model>.(csv|png|pdf)` | Per-sample module score (mean z-scored VST of the leading-edge genes of chosen pathways) for control / FA / edited |
 | `gene_heatmap_<model>.(csv|png|pdf)` | Per-sample heatmap of selected genes, row z-scored VST |
 
+### Examples (iPSC and iNeurons)
+
+**`rescue_map_NES_A_vs_C.png`: rescue map.** NES in A (x) against NES in C (y). A pathway that is down in FA and goes back up after editing
+lies near the diagonal y = x.
+![rescue map](img/rescue_map_NES_A_vs_C.png)
+
+**`theme_plot_rescued.png`: rescued pathways coloured by theme.** The same plot restricted to rescued pathways (n = 20 in iPSC, 203 in iNeurons), coloured by theme.
+![theme plot](img/theme_plot_rescued.png)
+
+**`theme_heatmap.png`: theme × contrast overview.** Colour = mean NES of the theme's pathways; the number shows significant pathways / pathways in the theme.
+In this example, mitochondria / OXPHOS is down in A and B in iPSC, and ribosome / translation goes in opposite directions in iPSC and iNeurons.
+![theme heatmap](img/theme_heatmap.png)
+
+**`module_scores_<model>.png`: module score per sample.** Control → FA → FA_edited trajectories (grey lines join a line to its edited version) for
+modules built from leading-edge genes (OXPHOS, cytosolic ribosome, Fe-S cluster assembly, synapse).
+![module scores](img/module_scores_iNeurons.png)
+
 ---
 
 ## 3. Rescue and sample-level analyses → `results/`
@@ -66,6 +115,13 @@ Combines the fgsea results of A, B and C for each model.
 | `51_rescue_tables_ipsc_ineurons.R` | `results/rescue_tables/51_rescue_tables.xlsx`, `51_rescue_<model>.csv` | Gene-level table: rescued / partial / reversed / not rescued, the three LFCs, number of pairs moving the right way, a readable `Confidence` column |
 | `52_paired_rescue_allgenes.R` | `results/paired_rescue/iNeurons/52_paired_rescue_all_genes.csv`, `52_candidates.xlsx`, `52_paired_rescue.pdf`, `52_verdict.txt` | Genes that return towards control reproducibly in all three donors, without an amplitude threshold. **Tier 1/2** candidates are compared with a reversed-direction null to estimate how many would appear by chance or clone effect |
 | `54_pathway_sample_level_tests.R` | `results_v4/pathway_ABC/pathway_sample_tests_<model>.csv` | Replicate-aware tests complementing fgsea: Welch (A, B) or paired (C) t-test on a per-sample module score, and a `limma::fry` rotation test. `lines_concordant` = lines (of 3) whose effect has the sign of the mean |
+
+### Example
+
+**`52_paired_rescue.pdf`: paired rescue on all genes (iNeurons).** x = LFC FA vs control, y = LFC edited vs FA (paired model). Genes in the lower right
+or upper left move back towards the control level after correction; Tier 1 and Tier 2 candidates are highlighted, and genes that follow cell
+composition are marked separately.
+![paired rescue](img/paired_rescue_52.png)
 
 ---
 
@@ -92,6 +148,9 @@ One sheet per model and contrast, plus `Légendes` (column dictionary) and `Rés
 | `driver_line`, `driver_share` | Line with the largest contribution, and its share of the summed positive contributions (≈ 1/3 balanced, ≈ 1 one line) |
 | `single_line_driven` | Significant overall, but the sign flips or nominal p ≥ 0.05 after removing at least one line |
 | `FXN_in_leading_edge`, `FXN_related_name` | FXN gene in the leading edge / name suggests the frataxin axis (Fe-S, iron, respiratory chain, mitochondrial translation) |
+
+**What a sheet looks like** (`iNeurons_A`: three robust pathways, then two whose signal depends on one line, e.g. *synaptic membrane*, where removing line 4676 drops |NES| from 1.78 to 1.19):
+![excel preview](img/xlsx_preview_iNeurons_A.png)
 
 ### Figures
 Common to all bar figures: pathways with padj < 0.05, 15–300 genes, redundant pathways merged (leading-edge Jaccard > 0.6;
