@@ -1,0 +1,25 @@
+# --- résultats et données (jamais versionnés) ---
+results/
+results_v4/
+plot_enrichment/
+gsea_loo/out/
+data/*.gtf.gz
+data/*.rds
+*.rds
+*.csv
+*.xlsx
+*.pdf
+*.png
+
+# --- configuration locale (identifiants de lignées, chemins) : copie config.example.R en config.R ---
+config/config.R
+
+# --- archives, historique, temporaires ---
+_archive/
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+*.bak
+.~lock*
+.DS_Store
